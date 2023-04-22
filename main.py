@@ -48,7 +48,7 @@ def nutrition_calculator():
 
 
 async def get_nutrient_intake(url):
-    browser = await launch(handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False)
+    browser = await launch(handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False, args=['--no-sandbox', '--disable-setuid-sandbox'])
     page = await browser.newPage()
     page.setDefaultNavigationTimeout(60000)
     await page.goto(url)
