@@ -1,8 +1,7 @@
 import streamlit as st
 from word_parsing import WordParsing
-from bs4 import BeautifulSoup
 import asyncio
-from pyppeteer import launch
+import requests
 
 
 def nutrition_calculator():
@@ -37,7 +36,7 @@ def nutrition_calculator():
         url = user_info.create_url()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        required_nutrient = loop.run_until_complete(get_nutrient_intake(url))
+        required_nutrient = get_apify_result(url)
         progress_text.text("")
         warning_text.text("")
         st.subheader("Result")
@@ -47,61 +46,32 @@ def nutrition_calculator():
         st.write(url)
 
 
-async def get_nutrient_intake(url):
-    browser = await launch(handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False, args=['--no-sandbox', '--disable-setuid-sandbox'])
-    page = await browser.newPage()
-    page.setDefaultNavigationTimeout(60000)
-    await page.goto(url)
+def get_apify_result(url):
 
-    await asyncio.sleep(1)
+    api_key = st.secrets["secrets"]["api_key"]
+    actor_id = st.secrets['secrets']
 
-    website_data = await page.content()
-    soup = BeautifulSoup(website_data, "html.parser")
+    # Start the actor
+    start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
+    values = f"""
+      {{
+        "start_urls": [
+          {{
+            "url": "{url}"
+          }}
+        ],
+        "max_depth": 1
+      }}
+    """
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    response = requests.post(start_actor_url, data=values, headers=headers)
 
-    generic_text_elements = soup.select('div.GenericText')
-    nutrient_intake_table = []
-    for element in generic_text_elements:
-        data = element.find_all('td')
-        if data:
-            nutrient_intake_table.append(data)
+    # Get the actor result
+    result = response.json()
+    print(result)
 
-        calorie_intake = soup.find('input', {'aria-label': 'Total daily calorie requirement '})
-        result = {
-            'Calorie_Per_Day': float(calorie_intake['value'].replace(',', '')),
-            'Macronutrient': {},
-            'Vitamin': {},
-            'Micronutrient': {}
-        }
-
-    for table in nutrient_intake_table:
-        for i in range(0, len(table), 2):
-            key = table[i].get_text()
-            value = table[i + 1].get_text()
-            if key in ['Carbohydrates', 'Total fiber', 'Protein', 'Fat', 'Water']:
-                if key == 'Total fiber':
-                    key = 'Fiber'
-                result['Macronutrient'][key] = value
-            elif key.startswith('Vitamin') or key == 'Choline' or key.startswith('Biotin'):
-                key = key.replace(' ', '_').replace('(', '').replace(')', '')
-                key = '_'.join(key.split('_')[:2])
-                subscript_mapping = {
-                    "₁": "1",
-                    "₂": "2",
-                    "₃": "3",
-                    "₄": "4",
-                    "₅": "5",
-                    "₆": "6",
-                    "₇": "7",
-                    "₈": "8",
-                    "₉": "9",
-                    "₀": "0",
-                }
-                for sub, num in subscript_mapping.items():
-                    key = key.replace(sub, num)
-                result['Vitamin'][key] = value
-            else:
-                result['Micronutrient'][key] = value
-    await browser.close()
     return result
 
 
