@@ -2,6 +2,7 @@ import streamlit as st
 from word_parsing import WordParsing
 import asyncio
 import requests
+import time
 
 
 def nutrition_calculator():
@@ -50,8 +51,6 @@ def get_apify_result(url):
 
     api_key = st.secrets["secrets"]["api_key"]
     actor_id = st.secrets['secrets']
-    st.write(api_key)
-    st.write(actor_id)
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
@@ -68,7 +67,9 @@ def get_apify_result(url):
     headers = {
         'Content-Type': 'application/json'
     }
+    st.write(values)
     response = requests.post(start_actor_url, data=values, headers=headers)
+    time.sleep(20)
 
     # Get the actor result
     result = response.json()
