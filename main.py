@@ -49,8 +49,8 @@ def nutrition_calculator():
 
 def get_apify_result(url):
 
-    api_key = st.secrets["secrets"]["api_key"]
-    actor_id = st.secrets['secrets']
+    api_key = st.secrets['api_key']
+    actor_id = st.secrets['actor_id']
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
@@ -79,6 +79,7 @@ def get_apify_result(url):
 
 
 def main():
+
     st.set_page_config(
         page_title="Nutrition Intake Calculator"
     )
