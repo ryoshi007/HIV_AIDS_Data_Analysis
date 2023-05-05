@@ -67,14 +67,10 @@ def get_apify_result(url):
     headers = {
         'Content-Type': 'application/json'
     }
-    st.write(values)
     response = requests.post(start_actor_url, data=values, headers=headers)
-    time.sleep(20)
 
     # Get the actor result
     result = response.json()
-    print(result)
-
     return result
 
 
