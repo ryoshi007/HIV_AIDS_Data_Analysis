@@ -50,6 +50,8 @@ def get_apify_result(url):
 
     api_key = st.secrets["secrets"]["api_key"]
     actor_id = st.secrets['secrets']
+    st.write(api_key)
+    st.write(actor_id)
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
