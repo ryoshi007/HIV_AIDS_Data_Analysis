@@ -2,7 +2,26 @@ import streamlit as st
 from word_parsing import WordParsing
 import asyncio
 import requests
+import auth as auth
+import db as db
 import time
+
+def sidebar():
+    st.sidebar.title("Your Lovely Nutrition Recommendation")
+    choice = st.sidebar.selectbox('Login/Sign Up',['Login','Sign Up'])
+    username = st.sidebar.text_input('Please enter your username')
+    password = st.sidebar.text_input('Please eneter your password')
+
+    if choice == 'Sign Up':
+        submit = st.sidebar.button('Create my account')
+
+        if submit:
+            user = auth.create_user_with_email_and_password(username,password)
+            st.success('Your account is created successfully!')
+            #Sign in
+            # user = auth.sign_in_with_email_and_password(username,password)
+            # db.child(user['localId'].child('ID').set(user['localId']))
+            st.title('Welcome')
 
 
 def nutrition_calculator():
@@ -87,8 +106,8 @@ def main():
                     """
     st.markdown(hide_st_style, unsafe_allow_html=True)
     st.write('<style>div.block-container{padding-top:0rem;padding-bottom:0rem;}</style>', unsafe_allow_html=True)
+    sidebar()
     nutrition_calculator()
-
 
 if __name__ == '__main__':
     main()
