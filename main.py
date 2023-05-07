@@ -4,25 +4,69 @@ import asyncio
 import requests
 import auth as auth
 import db as db
+from streamlit_option_menu import option_menu
 import time
 
 def sidebar():
-    st.sidebar.title("Your Lovely Nutrition Recommendation")
-    choice = st.sidebar.selectbox('Login/Sign Up',['Login','Sign Up'])
-    username = st.sidebar.text_input('Please enter your username')
-    password = st.sidebar.text_input('Please eneter your password')
+    # initialize the user's login state using SessionState
+    if 'loggedIn' not in st.session_state:
+        st.session_state['loggedIn'] = True
+        show_logout_sidebar()
+    else:
+        if st.session_state["loggedIn"]:
+            show_logout_sidebar()
+        else:
+            show_login_sidebar()
 
-    if choice == 'Sign Up':
-        submit = st.sidebar.button('Create my account')
 
-        if submit:
-            user = auth.create_user_with_email_and_password(username,password)
-            st.success('Your account is created successfully!')
-            #Sign in
-            # user = auth.sign_in_with_email_and_password(username,password)
-            # db.child(user['localId'].child('ID').set(user['localId']))
-            st.title('Welcome')
 
+def LoggedIn_clicked(username, password):
+    user = auth.sign_in_with_email_and_password(username, password)
+    db.child(user['localId'].child('ID').set(user['localId']))
+    st.session_state["loggedIn"] = True
+    st.session_state["username"] = username
+
+def LoggedOut_clicked():
+    st.session_state["loggedIn"] = False
+
+def show_login_sidebar():
+    if not st.session_state['loggedIn']:
+        with st.sidebar:
+            st.title("Personal Nutrition Recommendation App")
+            choice = st.selectbox('Login/Sign Up', ['Login', 'Sign Up'])
+            username = st.text_input('Please enter your username')
+            password = st.text_input('Please eneter your password')
+
+            if choice == 'Sign Up':
+                create = st.button('Create my account')
+
+                if create:
+                    user = auth.create_user_with_email_and_password(username, password)
+                    st.success('Your account is created successfully!')
+
+            # Sign in
+            if choice == 'Login':
+                st.button('Login', on_click=LoggedIn_clicked, args= (username,password))
+
+def show_logout_sidebar():
+    if st.session_state["loggedIn"]:
+        st.session_state["username"] = "Hon Ting"
+        with st.sidebar:
+            st.title("My App")
+            st.write("Welcome, " + st.session_state["username"])
+            selected = option_menu(
+                menu_title="Main Menu",
+                options=["Home", "Meal Recommendation", "Profile"],
+            )
+            st.button("Log Out", on_click=LoggedOut_clicked)
+
+        # Directed to different page
+        if selected == "Home":
+            st.title("You are home now")
+        if selected == "Meal Recommendation":
+            st.title("You are meal recommendation now")
+        if selected == "Profile":
+            st.title("You are profile now")
 
 def nutrition_calculator():
     st.subheader("Dietary Reference Intake (DRI) Calculator")
