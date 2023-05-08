@@ -3,4 +3,4 @@ setuptools==65.5.1
 wheel==0.38.4
 streamlit == 1.21.0
 auth == 0.5.3
-db == 0.1.1
+db == 0.2.2
