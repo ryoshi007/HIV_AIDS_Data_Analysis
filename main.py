@@ -5,7 +5,7 @@ import requests
 import auth as auth
 import db as db
 from streamlit_option_menu import option_menu
-import time
+
 
 def sidebar():
     # initialize the user's login state using SessionState
@@ -19,15 +19,16 @@ def sidebar():
             show_login_sidebar()
 
 
-
 def LoggedIn_clicked(username, password):
     user = auth.sign_in_with_email_and_password(username, password)
     db.child(user['localId'].child('ID').set(user['localId']))
     st.session_state["loggedIn"] = True
     st.session_state["username"] = username
 
+
 def LoggedOut_clicked():
     st.session_state["loggedIn"] = False
+
 
 def show_login_sidebar():
     if not st.session_state['loggedIn']:
@@ -48,6 +49,7 @@ def show_login_sidebar():
             if choice == 'Login':
                 st.button('Login', on_click=LoggedIn_clicked, args= (username,password))
 
+
 def show_logout_sidebar():
     if st.session_state["loggedIn"]:
         st.session_state["username"] = "Hon Ting"
@@ -67,6 +69,7 @@ def show_logout_sidebar():
             st.title("You are meal recommendation now")
         if selected == "Profile":
             st.title("You are profile now")
+
 
 def nutrition_calculator():
     st.subheader("Dietary Reference Intake (DRI) Calculator")
@@ -152,6 +155,7 @@ def main():
     st.write('<style>div.block-container{padding-top:0rem;padding-bottom:0rem;}</style>', unsafe_allow_html=True)
     sidebar()
     nutrition_calculator()
+
 
 if __name__ == '__main__':
     main()
