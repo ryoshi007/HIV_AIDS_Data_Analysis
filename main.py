@@ -70,7 +70,6 @@ def show_logout_sidebar():
         if selected == "Profile":
             st.title("You are profile now")
 
-
 def nutrition_calculator():
     st.subheader("Dietary Reference Intake (DRI) Calculator")
     st.write("Please input your data to calculate the required nutrition intake")
