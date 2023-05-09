@@ -2,31 +2,104 @@ import streamlit as st
 from word_parsing import WordParsing
 import asyncio
 import requests
-import auth as auth
-import db as db
+# import auth as auth
+# import db as db
 from streamlit_option_menu import option_menu
+# import secret variable
+from secret import secret
+import firebase
+from firebaseConfig import config
+from http import cookies
+
+# Instantiates a Firebase app
+app = firebase.initialize_app(config)
+
+# Firebase Authentication
+auth = app.auth()
+
+# initialize cookie
+cookie = cookies.SimpleCookie()
+
+if 'username' not in st.session_state:
+    st.session_state['username'] = ""
+
+if 'user_id' not in st.session_state:
+    st.session_state['user_id'] = ""
+
+if 'Email' not in st.session_state:
+    st.session_state['Email'] = ""
 
 
 def sidebar():
     # initialize the user's login state using SessionState
     if 'loggedIn' not in st.session_state:
-        st.session_state['loggedIn'] = True
+        st.session_state['loggedIn'] = False
+
+    if st.session_state["loggedIn"]:
         show_logout_sidebar()
     else:
-        if st.session_state["loggedIn"]:
-            show_logout_sidebar()
-        else:
-            show_login_sidebar()
+        show_login_sidebar()
 
 
-def LoggedIn_clicked(username, password):
-    user = auth.sign_in_with_email_and_password(username, password)
-    db.child(user['localId'].child('ID').set(user['localId']))
-    st.session_state["loggedIn"] = True
-    st.session_state["username"] = username
+def create_cookie(auth_token):
+    # store cookie
+    cookie['user_id'] = auth_token["localId"]
+    cookie['auth_token'] = auth_token["idToken"]
+    cookie['expiresIn'] = auth_token["expiresIn"]
+    cookie['expiresAt'] = auth_token["expiresAt"]
+    cookie_string = cookie.output()
+    return [('Set-Cookie', cookie_string)]
+
+
+def clear_cookie():
+    cookie['user_id'] = ''
+    cookie['auth_token'] = ''
+    cookie['expiresIn'] = ''
+    cookie['expiresAt'] = ''
+    cookie_string = cookie.output()
+    return [('Set-Cookie', cookie_string)]
+
+
+def LoggedIn_clicked(email, password):
+    user = None
+    try:
+        auth_token = auth.sign_in_with_email_and_password(email, password)
+        st.session_state["Email"] = email
+        create_cookie(auth_token)
+        account_info = auth.get_account_info(auth_token['idToken'])
+        st.session_state["user_id"] = account_info['users'][0]['localId']
+        # print(st.session_state["user_id"])
+        username = account_info['users'][0]['displayName']
+        # update username in session_state
+        st.session_state['username'] = username
+        st.success(f"Welcome, {username}!")
+        print("login successful")
+        st.session_state["loggedIn"] = True
+    except:
+        st.error("Incorrect password. Please try again.")
+        print("login failed")
+    return user
+
+
+def createAccount_clicked(email, username, password, password_c):
+    if len(password) < 8: return 'invalid password: password must be > 8 characters'
+    elif password == password_c:
+        try:
+            auth_token = auth.create_user_with_email_and_password(email, password)
+            auth.update_profile(auth_token['idToken'], display_name=username)
+            st.success("Registration successful.")
+            st.session_state["Email"] = email
+            # show_login_sidebar()
+            return "registration successful"
+        except:
+            st.error("Registration failed. The email has been registered.")
+            return "registration failed"
+    else:
+        st.error("Incompatible password.")
 
 
 def LoggedOut_clicked():
+    clear_cookie()
     st.session_state["loggedIn"] = False
 
 
@@ -34,25 +107,37 @@ def show_login_sidebar():
     if not st.session_state['loggedIn']:
         with st.sidebar:
             st.title("Personal Nutrition Recommendation App")
-            choice = st.selectbox('Login/Sign Up', ['Login', 'Sign Up'])
-            username = st.text_input('Please enter your username')
-            password = st.text_input('Please eneter your password')
+            choice = st.selectbox('Login / Sign Up', ['Login', 'Sign Up'])
 
             if choice == 'Sign Up':
-                create = st.button('Create my account')
+                # do not autocomplete email on sign up page
+                email = st.text_input('Email')
+                username = st.text_input('Username')
+                sign_up_password = st.text_input('Password', type="password")
+                sign_up_password_c = st.text_input('Confirm Password', type="password")
+                st.button('Create Account', on_click=createAccount_clicked, args= (email, username, sign_up_password, sign_up_password_c))
 
-                if create:
-                    user = auth.create_user_with_email_and_password(username, password)
-                    st.success('Your account is created successfully!')
-
-            # Sign in
             if choice == 'Login':
-                st.button('Login', on_click=LoggedIn_clicked, args= (username,password))
+                # autocomplete email on login page
+                email = st.text_input('Email', value=st.session_state["Email"])
+                login_password = st.text_input('Password', type="password", key="login_password_key")
+                st.button('Login', on_click=LoggedIn_clicked, args= (email, login_password))
 
+
+def home():
+    st.title("Home")
+    nutrition_calculator()
+
+def meal_recommendation():
+    st.title("Meal Recommendation")
+    # render meal recommendation page here
+
+def profile():
+    st.title("Profile")
+    # render profile page here
 
 def show_logout_sidebar():
     if st.session_state["loggedIn"]:
-        st.session_state["username"] = "Hon Ting"
         with st.sidebar:
             st.title("My App")
             st.write("Welcome, " + st.session_state["username"])
@@ -62,13 +147,14 @@ def show_logout_sidebar():
             )
             st.button("Log Out", on_click=LoggedOut_clicked)
 
-        # Directed to different page
+        # navigate between pages
         if selected == "Home":
-            st.title("You are home now")
+            home()
         if selected == "Meal Recommendation":
-            st.title("You are meal recommendation now")
+            meal_recommendation()
         if selected == "Profile":
-            st.title("You are profile now")
+            profile()
+
 
 def nutrition_calculator():
     st.subheader("Dietary Reference Intake (DRI) Calculator")
@@ -114,8 +200,8 @@ def nutrition_calculator():
 
 def get_apify_result(url):
 
-    api_key = st.secrets['api_key']
-    actor_id = st.secrets['actor_id']
+    api_key = secret['API_KEY_APIFY']
+    actor_id = secret['ACTOR_IP_APIFY']
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
@@ -153,7 +239,6 @@ def main():
     st.markdown(hide_st_style, unsafe_allow_html=True)
     st.write('<style>div.block-container{padding-top:0rem;padding-bottom:0rem;}</style>', unsafe_allow_html=True)
     sidebar()
-    nutrition_calculator()
 
 
 if __name__ == '__main__':
