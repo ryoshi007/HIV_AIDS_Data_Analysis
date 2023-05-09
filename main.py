@@ -6,12 +6,12 @@ import requests
 # import db as db
 from streamlit_option_menu import option_menu
 # import secret variable
-import firebase
 from firebaseConfig import config
 from http import cookies
+from firebase import initialize_app
 
 # Instantiates a Firebase app
-app = firebase.initialize_app(config)
+app = initialize_app(config)
 
 # Firebase Authentication
 auth = app.auth()
