@@ -6,7 +6,6 @@ import requests
 # import db as db
 from streamlit_option_menu import option_menu
 # import secret variable
-from secret import secret
 import firebase
 from firebaseConfig import config
 from http import cookies
@@ -128,13 +127,16 @@ def home():
     st.title("Home")
     nutrition_calculator()
 
+
 def meal_recommendation():
     st.title("Meal Recommendation")
     # render meal recommendation page here
 
+
 def profile():
     st.title("Profile")
     # render profile page here
+
 
 def show_logout_sidebar():
     if st.session_state["loggedIn"]:
@@ -200,8 +202,8 @@ def nutrition_calculator():
 
 def get_apify_result(url):
 
-    api_key = secret['API_KEY_APIFY']
-    actor_id = secret['ACTOR_IP_APIFY']
+    api_key = st.secret['API_KEY_APIFY']
+    actor_id = st.secret['ACTOR_IP_APIFY']
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
