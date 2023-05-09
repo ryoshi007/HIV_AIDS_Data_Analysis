@@ -202,8 +202,8 @@ def nutrition_calculator():
 
 def get_apify_result(url):
 
-    api_key = st.secret['API_KEY_APIFY']
-    actor_id = st.secret['ACTOR_IP_APIFY']
+    api_key = st.secrets['API_KEY_APIFY']
+    actor_id = st.secrets['ACTOR_IP_APIFY']
 
     # Start the actor
     start_actor_url = f"https://api.apify.com/v2/acts/{actor_id}/run-sync-get-dataset-items?token={api_key}"
